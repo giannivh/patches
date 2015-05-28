@@ -1,0 +1,138 @@
+diff --git a/addressof_np_test.cpp b/addressof_np_test.cpp
+new file mode 100644
+index 0000000..9e155d4
+--- /dev/null
++++ b/addressof_np_test.cpp
+@@ -0,0 +1,50 @@
++//
++// Copyright 2013 Peter Dimov
++//
++// Distributed under the Boost Software License, Version 1.0.
++// See accompanying file LICENSE_1_0.txt or copy at
++// http://www.boost.org/LICENSE_1_0.txt
++//
++
++#include <boost/utility/addressof.hpp>
++#include <boost/detail/lightweight_test.hpp>
++#include <cstddef>
++
++#if defined( BOOST_NO_CXX11_NULLPTR )
++
++void nullptr_test()
++{
++}
++
++#else
++
++void nullptr_test()
++{
++    {
++        auto x = nullptr;
++        BOOST_TEST( boost::addressof(x) == &x );
++    }
++
++    {
++        auto const x = nullptr;
++        BOOST_TEST( boost::addressof(x) == &x );
++    }
++
++    {
++        auto volatile x = nullptr;
++        BOOST_TEST( boost::addressof(x) == &x );
++    }
++
++    {
++        auto const volatile x = nullptr;
++        BOOST_TEST( boost::addressof(x) == &x );
++    }
++}
++
++#endif
++
++int main()
++{
++    nullptr_test();
++    return boost::report_errors();
++}
+diff --git a/utility/addressof.hpp b/utility/addressof.hpp
+index 2b637df..ef5639f 100644
+--- a/utility/addressof.hpp
++++ b/utility/addressof.hpp
+@@ -1,7 +1,7 @@
+ // Copyright (C) 2002 Brad King (brad.king@kitware.com)
+ //                    Douglas Gregor (gregod@cs.rpi.edu)
+ //
+-// Copyright (C) 2002, 2008 Peter Dimov
++// Copyright (C) 2002, 2008, 2013 Peter Dimov
+ //
+ // Distributed under the Boost Software License, Version 1.0. (See
+ // accompanying file LICENSE_1_0.txt or copy at
+@@ -14,6 +14,7 @@
+ 
+ # include <boost/config.hpp>
+ # include <boost/detail/workaround.hpp>
++# include <cstddef>
+ 
+ namespace boost
+ {
+@@ -46,6 +47,60 @@ template<class T> struct addressof_impl
+     }
+ };
+ 
++#if !defined( BOOST_NO_CXX11_NULLPTR )
++
++#if defined( __clang__ ) && !defined( _LIBCPP_VERSION ) && !defined( BOOST_NO_CXX11_DECLTYPE )
++
++    typedef decltype(nullptr) addr_nullptr_t;
++
++#else
++
++    typedef std::nullptr_t addr_nullptr_t;
++
++#endif
++
++template<> struct addressof_impl< addr_nullptr_t >
++{
++    typedef addr_nullptr_t T;
++
++    static BOOST_FORCEINLINE T * f( T & v, int )
++    {
++        return &v;
++    }
++};
++
++template<> struct addressof_impl< addr_nullptr_t const >
++{
++    typedef addr_nullptr_t const T;
++
++    static BOOST_FORCEINLINE T * f( T & v, int )
++    {
++        return &v;
++    }
++};
++
++template<> struct addressof_impl< addr_nullptr_t volatile >
++{
++    typedef addr_nullptr_t volatile T;
++
++    static BOOST_FORCEINLINE T * f( T & v, int )
++    {
++        return &v;
++    }
++};
++
++template<> struct addressof_impl< addr_nullptr_t const volatile >
++{
++    typedef addr_nullptr_t const volatile T;
++
++    static BOOST_FORCEINLINE T * f( T & v, int )
++    {
++        return &v;
++    }
++};
++
++#endif
++
+ } // namespace detail
+ 
+ template<class T>
